@@ -1,14 +1,15 @@
 
 import React from "react";
-import { Dashboard } from "@/components/Dashboard";
-import { useConversationData } from "@/hooks/useConversationData";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-const Index = () => {
-  const { data, isLoading, error } = useConversationData();
+interface DataFallbackProps {
+  isLoading: boolean;
+  error: Error | null;
+}
 
+export const DataFallback = ({ isLoading, error }: DataFallbackProps) => {
   if (isLoading) {
     return (
       <div className="bg-gradient-to-b from-white to-gray-50 min-h-screen p-8">
@@ -49,11 +50,5 @@ const Index = () => {
     );
   }
 
-  return (
-    <div className="bg-gradient-to-b from-white to-gray-50 min-h-screen">
-      <Dashboard data={data} />
-    </div>
-  );
+  return null;
 };
-
-export default Index;

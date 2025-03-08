@@ -1,0 +1,139 @@
+
+import React from "react";
+import { AccuracyCard } from "./AccuracyCard";
+import { AccuracyGraph } from "./AccuracyGraph";
+import { SentimentAnalysis } from "./SentimentAnalysis";
+import { DelayGraph } from "./DelayGraph";
+import { ConversationInsights } from "./ConversationInsights";
+import { ConversationTimeline } from "./ConversationTimeline";
+import { ConversationEntry } from "@/utils/dataTypes";
+import { BarChart4, Clock, Heart, MessagesSquare } from "lucide-react";
+
+interface DashboardProps {
+  data: ConversationEntry[];
+}
+
+export function Dashboard({ data }: DashboardProps) {
+  return (
+    <div className="min-h-screen p-4 sm:p-8">
+      {/* Header */}
+      <header className="mb-8 animate-slide-down">
+        <h1 className="text-3xl sm:text-4xl font-bold mb-2">Conversation Analytics</h1>
+        <p className="text-muted-foreground">
+          Detailed insights and analysis of conversation data
+        </p>
+      </header>
+      
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
+        <div className="flex flex-col gap-1 glass-card p-4 rounded-2xl animate-fade-in" style={{ animationDelay: "100ms" }}>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-medium text-muted-foreground">Total Messages</h3>
+            <MessagesSquare className="h-4 w-4 text-primary" />
+          </div>
+          <p className="text-2xl font-semibold">{data.length}</p>
+          <div className="text-xs text-muted-foreground">
+            {data.filter(entry => entry.speaker === "Bot").length} bot / {data.filter(entry => entry.speaker === "Customer").length} customer
+          </div>
+        </div>
+        
+        <div className="flex flex-col gap-1 glass-card p-4 rounded-2xl animate-fade-in" style={{ animationDelay: "200ms" }}>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-medium text-muted-foreground">Average Response Time</h3>
+            <Clock className="h-4 w-4 text-primary" />
+          </div>
+          <p className="text-2xl font-semibold">
+            {(() => {
+              const delays = data
+                .filter(entry => entry.speaker === "Bot" && entry.response_delay !== "null")
+                .map(entry => {
+                  const match = entry.response_delay.match(/(\d+)/);
+                  return match ? parseInt(match[0], 10) : 0;
+                });
+              
+              const avgDelay = delays.length > 0 
+                ? delays.reduce((sum, val) => sum + val, 0) / delays.length
+                : 0;
+              
+              return `${avgDelay.toFixed(1)}s`;
+            })()}
+          </p>
+          <div className="text-xs text-muted-foreground">
+            Based on {data.filter(entry => entry.speaker === "Bot" && entry.response_delay !== "null").length} responses
+          </div>
+        </div>
+        
+        <div className="flex flex-col gap-1 glass-card p-4 rounded-2xl animate-fade-in" style={{ animationDelay: "300ms" }}>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-medium text-muted-foreground">Customer Sentiment</h3>
+            <Heart className="h-4 w-4 text-primary" />
+          </div>
+          <p className="text-2xl font-semibold">
+            {(() => {
+              const customerSentiments = data
+                .filter(entry => entry.speaker === "Customer")
+                .map(entry => entry.sentiment_words_analysis);
+              
+              const positive = customerSentiments.filter(s => s === "positive").length;
+              const neutral = customerSentiments.filter(s => s === "neutral").length;
+              const negative = customerSentiments.filter(s => s === "negative").length;
+              
+              if (positive > neutral && positive > negative) return "Positive";
+              if (negative > neutral && negative > positive) return "Negative";
+              return "Neutral";
+            })()}
+          </p>
+          <div className="text-xs text-muted-foreground">
+            Based on {data.filter(entry => entry.speaker === "Customer").length} customer messages
+          </div>
+        </div>
+        
+        <div className="flex flex-col gap-1 glass-card p-4 rounded-2xl animate-fade-in" style={{ animationDelay: "400ms" }}>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-medium text-muted-foreground">Accuracy Rating</h3>
+            <BarChart4 className="h-4 w-4 text-primary" />
+          </div>
+          <p className="text-2xl font-semibold">
+            {(() => {
+              const botEntriesWithAccuracy = data.filter(
+                entry => entry.speaker === "Bot" && entry.accuracy_scale !== null
+              );
+              
+              const accuracyValues = botEntriesWithAccuracy.map(entry => entry.accuracy_scale as number);
+              const avgAccuracy = accuracyValues.length > 0
+                ? accuracyValues.reduce((sum, val) => sum + val, 0) / accuracyValues.length
+                : 0;
+              
+              const percentage = Math.round(((avgAccuracy + 1) / 2) * 100);
+              return `${percentage}%`;
+            })()}
+          </p>
+          <div className="text-xs text-muted-foreground">
+            Based on {data.filter(entry => entry.speaker === "Bot" && entry.accuracy_scale !== null).length} evaluated responses
+          </div>
+        </div>
+      </div>
+      
+      {/* Main Dashboard Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        {/* First Column */}
+        <div className="space-y-6">
+          <AccuracyCard data={data} />
+          <SentimentAnalysis data={data} />
+        </div>
+        
+        {/* Second Column */}
+        <div className="lg:col-span-2 space-y-6">
+          <AccuracyGraph data={data} />
+          <DelayGraph data={data} />
+        </div>
+      </div>
+      
+      {/* Insights and Timeline */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <ConversationInsights data={data} />
+        <ConversationTimeline data={data} />
+      </div>
+    </div>
+  );
+}

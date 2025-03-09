@@ -1,7 +1,11 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConversationEntry } from "@/utils/dataTypes";
-import { Bot, User, Clock } from "lucide-react";
+import { Bot, User, Clock, AlertTriangle, XCircle, BarChart2 } from "lucide-react";
+import { 
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, 
+  Tooltip, ResponsiveContainer, TooltipProps, ReferenceDot
+} from 'recharts';
 
 interface ConversationTimelineProps {
   data: ConversationEntry[];
@@ -11,11 +15,9 @@ interface ConversationTimelineProps {
 
 export function ConversationTimeline({ 
   data, 
-  isStreaming = false,
+  isStreaming = false, 
   currentStreamingItem = null 
 }: ConversationTimelineProps) {
-  // Removed the useRef and useEffect for auto-scrolling
-  
   // Format the timestamp for display
   const formatTime = (timeStr: string) => {
     const parts = timeStr.split(":");
@@ -26,10 +28,32 @@ export function ConversationTimeline({
   };
   
   // Get sentiment indicator
-  const getSentimentIndicator = (sentiment: number) => {
-    if (sentiment > 0.1) return "positive";
-    if (sentiment < -0.1) return "negative";
-    return "neutral";
+  const getSentimentIndicator = (sentiment: number | string) => {
+    if (typeof sentiment === 'number') {
+      if (sentiment > 0.1) return "positive";
+      if (sentiment < -0.1) return "negative";
+      return "neutral";
+    } else {
+      return sentiment; // If it's already a string like "positive", "negative", etc.
+    }
+  };
+  
+  // Get sentiment color
+  const getSentimentColor = (sentiment: number | string) => {
+    let sentimentValue = sentiment;
+    
+    if (typeof sentiment === 'string') {
+      sentimentValue = sentiment === "positive" ? 0.5 : 
+                       sentiment === "negative" ? -0.5 : 0;
+    }
+    
+    if ((typeof sentimentValue === 'number' && sentimentValue > 0.1) || sentiment === "positive") {
+      return "#16a34a"; // green-600
+    }
+    if ((typeof sentimentValue === 'number' && sentimentValue < -0.1) || sentiment === "negative") {
+      return "#dc2626"; // red-600
+    }
+    return "#525252"; // neutral-600
   };
   
   // Get accuracy indicator
@@ -40,6 +64,117 @@ export function ConversationTimeline({
     if (accuracy > 0) return <span className="text-xs text-blue-500">Good</span>;
     if (accuracy > -0.5) return <span className="text-xs text-amber-500">Fair</span>;
     return <span className="text-xs text-rose-500">Poor</span>;
+  };
+
+  // Check if an entry has an alert
+  const getAlertType = (entry: ConversationEntry): { type: string, color: string } | null => {
+    // Check for abusive content
+    if (entry.is_abusive === true) {
+      return { type: 'abusive', color: '#ef4444' }; // red-500
+    }
+    
+    // Check for poor accuracy (for bot responses)
+    if (entry.speaker === 'Bot' && entry.accuracy !== null && entry.accuracy < -0.2) {
+      return { type: 'accuracy', color: '#f97316' }; // orange-500
+    }
+    
+    // Check for significant delay
+    if (entry.speaker === 'Bot' && entry.response_delay !== "null") {
+      const delayMatch = entry.response_delay.match(/(\d+)/);
+      if (delayMatch) {
+        const delaySeconds = parseInt(delayMatch[0], 10);
+        if (delaySeconds > 3) {
+          return { type: 'delay', color: '#eab308' }; // yellow-500
+        }
+      }
+    }
+    
+    return null;
+  };
+
+  // Transform conversation data for the area chart
+  const chartData = data.map((entry, index) => {
+    // Get sentiment analysis value
+    const sentimentValue = typeof entry.sentiment === 'number' ? entry.sentiment : 
+                           entry.sentiment_words_analysis === "positive" ? 0.5 :
+                           entry.sentiment_words_analysis === "negative" ? -0.5 : 0;
+    
+    // Scale the sentiment for display (0 to 100 range)
+    const scaledSentimentValue = Math.min(90, Math.max(10, ((sentimentValue + 1) / 2) * 80 + 10));
+    
+    // Check if this entry has an alert
+    const alert = getAlertType(entry);
+    
+    return {
+      name: formatTime(entry.start_time),
+      index: index,
+      customer: entry.speaker === "Customer" ? scaledSentimentValue : 0,
+      bot: entry.speaker === "Bot" ? scaledSentimentValue : 0,
+      text: entry.text.substring(0, 30) + (entry.text.length > 30 ? "..." : ""),
+      sentiment: typeof entry.sentiment === 'number' ? 
+                (entry.sentiment > 0.1 ? "positive" : entry.sentiment < -0.1 ? "negative" : "neutral") :
+                entry.sentiment_words_analysis || "neutral",
+      speaker: entry.speaker,
+      alert: alert ? alert.type : null,
+      alertColor: alert ? alert.color : null,
+      fullEntry: entry
+    };
+  });
+
+  // Custom tooltip for the area chart
+  const CustomTooltip = ({ active, payload, label }: TooltipProps<any, any>) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="bg-background/90 border border-border p-2 rounded-md shadow-md text-xs">
+          <p className="font-medium">{label}</p>
+          <p className="text-violet-500">{data.speaker === "Customer" ? "Customer speaking" : ""}</p>
+          <p className="text-blue-500">{data.speaker === "Bot" ? "AI Assistant speaking" : ""}</p>
+          <p className="mt-1">{data.text}</p>
+          <p className={`mt-1 ${
+            data.sentiment === "positive" ? "text-emerald-500" : 
+            data.sentiment === "negative" ? "text-rose-500" : "text-neutral-500"
+          }`}>
+            Sentiment: {data.sentiment}
+          </p>
+          
+          {/* Alert information */}
+          {data.alert && (
+            <div className="mt-2 pt-2 border-t border-border">
+              <p className="font-medium text-red-500 flex items-center gap-1">
+                <AlertTriangle className="h-3 w-3" />
+                {data.alert === 'abusive' && 'Abusive Content Detected'}
+                {data.alert === 'accuracy' && 'Poor Accuracy Response'}
+                {data.alert === 'delay' && 'Significant Response Delay'}
+              </p>
+              {data.alert === 'delay' && data.fullEntry.response_delay !== "null" && (
+                <p className="text-amber-600">Delay: {data.fullEntry.response_delay}</p>
+              )}
+              {data.alert === 'accuracy' && data.fullEntry.accuracy !== null && (
+                <p className="text-orange-600">
+                  Accuracy: {Math.round(((data.fullEntry.accuracy + 1) / 2) * 100)}%
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    }
+    return null;
+  };
+
+  // Get alert icon based on type
+  const getAlertIcon = (type: string) => {
+    switch (type) {
+      case 'abusive':
+        return <XCircle className="h-3 w-3" />;
+      case 'accuracy':
+        return <BarChart2 className="h-3 w-3" />;
+      case 'delay':
+        return <Clock className="h-3 w-3" />;
+      default:
+        return <AlertTriangle className="h-3 w-3" />;
+    }
   };
 
   return (
@@ -56,114 +191,125 @@ export function ConversationTimeline({
         </CardTitle>
       </CardHeader>
       <CardContent className="overflow-y-auto max-h-[550px] pr-2">
-        <div className="relative space-y-6">
-          {/* Vertical Timeline Line */}
-          <div className="absolute top-0 bottom-0 left-6 w-px bg-border transform translate-x-px"></div>
-          
-          {data.map((entry, index) => {
-            // Check if this message is new (last added)
-            const isNewMessage = index === data.length - 1 && isStreaming;
+        <div className="space-y-6">
+          {/* Area Chart Visualization */}
+          <div className="h-[250px] w-full mb-4 border border-border/50 rounded-lg overflow-hidden relative">
+            {/* Alert Legend */}
+            <div className="absolute top-2 right-2 z-10 flex flex-col gap-1 bg-background/70 p-1 rounded text-xs">
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                <span>Abusive Content</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+                <span>Poor Accuracy</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                <span>Response Delay</span>
+              </div>
+            </div>
             
-            return (
-              <div 
-                key={index} 
-                className={`relative flex items-start gap-4 transition-all duration-500 ${
-                  isNewMessage ? "animate-highlight-new" : "animate-fade-in"
-                }`}
-                style={{ 
-                  animationDelay: isNewMessage ? "0ms" : `${50 * index}ms`,
-                }}
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart
+                data={chartData}
+                margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
               >
-                {/* Timeline Node */}
-                <div className={`absolute left-6 transform -translate-x-1/2 mt-1.5 transition-all duration-300 ${isNewMessage ? "scale-125" : ""}`}>
-                  <div className={`rounded-full p-1.5 ${
-                    entry.speaker === "Bot" 
-                      ? "bg-blue-100 text-blue-600"
-                      : "bg-violet-100 text-violet-600"
-                  }`}>
-                    {entry.speaker === "Bot" ? (
-                      <Bot className="h-3 w-3" />
-                    ) : (
-                      <User className="h-3 w-3" />
-                    )}
-                  </div>
-                </div>
+                <defs>
+                  <linearGradient id="colorCustomer" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="colorBot" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <XAxis 
+                  dataKey="name" 
+                  tick={{ fontSize: 12 }} 
+                  axisLine={{ stroke: '#e5e7eb' }} 
+                  tickLine={{ stroke: '#e5e7eb' }}
+                />
+                <YAxis 
+                  hide={true}
+                  domain={[0, 100]} 
+                />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />
+                <Tooltip content={<CustomTooltip />} />
+                <Area 
+                  type="monotone" 
+                  dataKey="customer" 
+                  stroke="#8b5cf6" 
+                  strokeWidth={2}
+                  fillOpacity={1} 
+                  fill="url(#colorCustomer)" 
+                  activeDot={{ r: 6, stroke: '#8b5cf6', strokeWidth: 1, fill: 'white' }}
+                  name="Customer"
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="bot" 
+                  stroke="#3b82f6" 
+                  strokeWidth={2}
+                  fillOpacity={1} 
+                  fill="url(#colorBot)" 
+                  activeDot={{ r: 6, stroke: '#3b82f6', strokeWidth: 1, fill: 'white' }}
+                  name="AI Assistant"
+                />
                 
-                {/* Timestamp */}
-                <div className="min-w-16 text-xs text-muted-foreground flex items-center pt-1.5">
-                  <Clock className="h-3 w-3 mr-1" />
-                  <span>{formatTime(entry.start_time)}</span>
-                </div>
-                
-                {/* Content */}
-                <div className={`flex-1 bg-secondary/30 rounded-lg p-3 shadow-sm ${
-                  isNewMessage ? "animate-pulse-subtle border border-primary/30" : ""
-                }`}>
-                  <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                    <h4 className="text-sm font-medium">
-                      {entry.speaker === "Bot" ? "AI Assistant" : "Customer"}
-                    </h4>
-                    
-                    <div className={`pill pill-${getSentimentIndicator(entry.sentiment)}`}>
-                      {getSentimentIndicator(entry.sentiment)}
-                    </div>
-                    
-                    {entry.accuracy !== null && (
-                      <div className="pill bg-secondary">
-                        {getAccuracyIndicator(entry.accuracy)}
-                      </div>
-                    )}
-                    
-                    {entry.response_delay !== "null" && (
-                      <div className="pill bg-secondary text-xs">
-                        <Clock className="h-3 w-3 mr-1" />
-                        <span>{entry.response_delay}</span>
-                      </div>
-                    )}
-                    
-                    {isNewMessage && (
-                      <div className="pill bg-primary/20 text-primary text-xs">
-                        New
-                      </div>
-                    )}
-                  </div>
-                  
-                  <p className="text-sm">{entry.text}</p>
-                </div>
-              </div>
-            );
-          })}
-
-          {/* Add typing indicator when streaming */}
+                {/* Alert markers */}
+                {chartData.map((entry, index) => {
+                  if (entry.alert) {
+                    const y = entry.speaker === "Customer" ? entry.customer : entry.bot;
+                    return (
+                      <ReferenceDot
+                        key={`alert-${index}`}
+                        x={entry.name}
+                        y={y}
+                        r={6}
+                        fill={entry.alertColor || "#ef4444"}
+                        stroke="#fff"
+                        strokeWidth={2}
+                        strokeOpacity={0.8}
+                      />
+                    );
+                  }
+                  return null;
+                })}
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+          
+          {/* Legend */}
+          <div className="flex items-center justify-center gap-8 mb-4 text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-violet-500"></div>
+              <span>Customer</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+              <span>AI Assistant</span>
+            </div>
+          </div>
+          
+          {/* Streaming indicator */}
           {isStreaming && currentStreamingItem && (
-            <div className="relative flex items-start gap-4">
-              <div className="absolute left-6 transform -translate-x-1/2 mt-1.5">
-                <div className="rounded-full p-1.5 bg-primary/20">
-                  <div className="h-3 w-3"></div>
-                </div>
-              </div>
-              
-              <div className="min-w-16 text-xs text-muted-foreground flex items-center pt-1.5">
-                <Clock className="h-3 w-3 mr-1" />
-                <span>now</span>
-              </div>
-              
-              <div className="flex-1 bg-secondary/30 rounded-lg p-3 shadow-sm">
-                <div className="flex items-center space-x-2">
-                  <div className="h-2 w-2 bg-primary rounded-full animate-bounce"></div>
-                  <div className="h-2 w-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
-                  <div className="h-2 w-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
-                  <span className="text-sm text-muted-foreground ml-2">
-                    {currentStreamingItem.speaker === "Bot" 
-                      ? "AI is responding..." 
-                      : "Customer is typing..."}
-                  </span>
-                </div>
+            <div className="flex justify-end mb-2">
+              <div className="bg-primary/20 text-primary text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                <span className="h-1.5 w-1.5 bg-primary rounded-full animate-pulse"></span>
+                {currentStreamingItem.speaker === 'Bot' ? 'AI responding...' : 'Customer typing...'}
               </div>
             </div>
           )}
           
-          {/* Removed the ref for auto-scrolling */}
+          {/* Messages List */}
+          <div className="relative space-y-6">
+            {/* Vertical Timeline Line */}
+            <div className="absolute top-0 bottom-0 left-6 w-px bg-border transform translate-x-px"></div>
+            
+           
+          </div>
         </div>
       </CardContent>
     </Card>

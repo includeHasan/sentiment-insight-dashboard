@@ -10,8 +10,8 @@ export function useConversationData() {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch("http://localhost:8000/data");
-        
+        const response = await fetch("http://192.168.41.2:8000/data");
+        console.log("API Response:", response);
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }

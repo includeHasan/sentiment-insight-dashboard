@@ -31,7 +31,14 @@ export function Dashboard({ data, isStreaming = false, currentStreamingItem = nu
             : "Detailed insights and analysis of conversation data"}
         </p>
       </header>
-      
+      {/* Insights and Timeline */}
+      <div className="w-full gap-6">
+        <ConversationTimeline 
+          data={conversationData} 
+          isStreaming={isStreaming}
+          currentStreamingItem={currentStreamingItem}
+        />
+      </div>
       {/* Stats Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
         <div className="flex flex-col gap-1 glass-card p-4 rounded-2xl animate-fade-in" style={{ animationDelay: "100ms" }}>
@@ -128,24 +135,20 @@ export function Dashboard({ data, isStreaming = false, currentStreamingItem = nu
         <div className="space-y-6">
           <AccuracyCard data={conversationData} />
           <SentimentAnalysis data={conversationData} />
+        <ConversationInsights data={conversationData} />
+
         </div>
         
         {/* Second Column */}
         <div className="lg:col-span-2 space-y-6">
           <AccuracyGraph data={conversationData} />
           <DelayGraph data={conversationData} />
+
         </div>
+
       </div>
       
-      {/* Insights and Timeline */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ConversationInsights data={conversationData} />
-        <ConversationTimeline 
-          data={conversationData} 
-          isStreaming={isStreaming}
-          currentStreamingItem={currentStreamingItem}
-        />
-      </div>
+      
     </div>
   );
 }

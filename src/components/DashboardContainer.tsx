@@ -15,7 +15,7 @@ export function DashboardContainer() {
     streamComplete,
     currentStreamingItem,
     totalItems
-  } = useStreamingConversationData(1500); // 1.5 seconds per message
+  } = useStreamingConversationData(3000); // 1.5 seconds per message
   
   // Track the most recently added alerts
   const [recentAlerts, setRecentAlerts] = useState<typeof alertMessages>([]);
@@ -149,7 +149,7 @@ export function DashboardContainer() {
         <Progress value={progress} className="h-2" />
       </div>
       <div className="text-sm text-muted-foreground whitespace-nowrap">
-        {Math.round(progress)}% ({data?.conversation?.length || 0}/{totalItems})
+        {Math.round(progress)}% ({data?.conversation?.length || 0})
       </div>
       {currentStreamingItem && (
         <div className="flex items-center gap-1 text-sm bg-primary/10 px-2 py-1 rounded-md">
@@ -163,7 +163,7 @@ export function DashboardContainer() {
   // If we get here, we have valid data
   return (
     <>
-      {alertsSection}
+      {/* {alertsSection} */}
       {streamingIndicator}
       <Dashboard 
         data={data} 

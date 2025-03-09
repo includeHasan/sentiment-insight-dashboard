@@ -5,23 +5,30 @@ import { SentimentAnalysis } from "./SentimentAnalysis";
 import { DelayGraph } from "./DelayGraph";
 import { ConversationInsights } from "./ConversationInsights";
 import { ConversationTimeline } from "./ConversationTimeline";
-import { ConversationData } from "@/utils/dataTypes";
+import { ConversationData, ConversationEntry } from "@/utils/dataTypes";
 import { BarChart4, Clock, Heart, MessagesSquare } from "lucide-react";
 
 interface DashboardProps {
   data: ConversationData;
+  isStreaming?: boolean;
+  currentStreamingItem?: ConversationEntry | null;
 }
 
-export function Dashboard({ data }: DashboardProps) {
+export function Dashboard({ data, isStreaming = false, currentStreamingItem = null }: DashboardProps) {
   const conversationData = data.conversation;
   
   return (
     <div className="min-h-screen p-4 sm:p-8">
       {/* Header */}
       <header className="mb-8 animate-slide-down">
-        <h1 className="text-3xl sm:text-4xl font-bold mb-2">Conversation Analytics</h1>
+        <h1 className="text-3xl sm:text-4xl font-bold mb-2">
+          Conversation Analytics
+          {isStreaming && <span className="ml-2 text-lg text-primary animate-pulse">• Live</span>}
+        </h1>
         <p className="text-muted-foreground">
-          Detailed insights and analysis of conversation data
+          {isStreaming 
+            ? "Real-time insights and analysis of streaming conversation data" 
+            : "Detailed insights and analysis of conversation data"}
         </p>
       </header>
       
@@ -73,14 +80,14 @@ export function Dashboard({ data }: DashboardProps) {
             {(() => {
               const customerSentiments = conversationData
                 .filter(entry => entry.speaker === "Customer")
-                .map(entry => entry.sentiment_words_analysis);
+                .map(entry => entry.sentiment);
               
-              const positive = customerSentiments.filter(s => s === "positive").length;
-              const neutral = customerSentiments.filter(s => s === "neutral").length;
-              const negative = customerSentiments.filter(s => s === "negative").length;
+              if (customerSentiments.length === 0) return "N/A";
               
-              if (positive > neutral && positive > negative) return "Positive";
-              if (negative > neutral && negative > positive) return "Negative";
+              const avgSentiment = customerSentiments.reduce((sum, val) => sum + val, 0) / customerSentiments.length;
+              
+              if (avgSentiment > 0.3) return "Positive";
+              if (avgSentiment < -0.3) return "Negative";
               return "Neutral";
             })()}
           </p>
@@ -133,7 +140,11 @@ export function Dashboard({ data }: DashboardProps) {
       {/* Insights and Timeline */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ConversationInsights data={conversationData} />
-        <ConversationTimeline data={conversationData} />
+        <ConversationTimeline 
+          data={conversationData} 
+          isStreaming={isStreaming}
+          currentStreamingItem={currentStreamingItem}
+        />
       </div>
     </div>
   );

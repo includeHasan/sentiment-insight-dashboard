@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConversationEntry } from "@/utils/dataTypes";
@@ -11,11 +10,11 @@ interface AccuracyCardProps {
 export function AccuracyCard({ data }: AccuracyCardProps) {
   // Extract bot entries with accuracy scores
   const botEntriesWithAccuracy = data.filter(
-    (entry) => entry.speaker === "Bot" && entry.accuracy_scale !== null
+    (entry) => entry.speaker === "Bot" && entry.accuracy !== null
   );
   
   // Calculate average accuracy
-  const accuracyValues = botEntriesWithAccuracy.map((entry) => entry.accuracy_scale as number);
+  const accuracyValues = botEntriesWithAccuracy.map((entry) => entry.accuracy as number);
   const avgAccuracy = accuracyValues.length > 0
     ? accuracyValues.reduce((sum, val) => sum + val, 0) / accuracyValues.length
     : 0;

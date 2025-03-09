@@ -1,4 +1,3 @@
-
 import React from "react";
 import { AccuracyCard } from "./AccuracyCard";
 import { AccuracyGraph } from "./AccuracyGraph";
@@ -6,14 +5,16 @@ import { SentimentAnalysis } from "./SentimentAnalysis";
 import { DelayGraph } from "./DelayGraph";
 import { ConversationInsights } from "./ConversationInsights";
 import { ConversationTimeline } from "./ConversationTimeline";
-import { ConversationEntry } from "@/utils/dataTypes";
+import { ConversationData } from "@/utils/dataTypes";
 import { BarChart4, Clock, Heart, MessagesSquare } from "lucide-react";
 
 interface DashboardProps {
-  data: ConversationEntry[];
+  data: ConversationData;
 }
 
 export function Dashboard({ data }: DashboardProps) {
+  const conversationData = data.conversation;
+  
   return (
     <div className="min-h-screen p-4 sm:p-8">
       {/* Header */}
@@ -31,9 +32,9 @@ export function Dashboard({ data }: DashboardProps) {
             <h3 className="text-sm font-medium text-muted-foreground">Total Messages</h3>
             <MessagesSquare className="h-4 w-4 text-primary" />
           </div>
-          <p className="text-2xl font-semibold">{data.length}</p>
+          <p className="text-2xl font-semibold">{conversationData.length}</p>
           <div className="text-xs text-muted-foreground">
-            {data.filter(entry => entry.speaker === "Bot").length} bot / {data.filter(entry => entry.speaker === "Customer").length} customer
+            {conversationData.filter(entry => entry.speaker === "Bot").length} bot / {conversationData.filter(entry => entry.speaker === "Customer").length} customer
           </div>
         </div>
         
@@ -44,7 +45,7 @@ export function Dashboard({ data }: DashboardProps) {
           </div>
           <p className="text-2xl font-semibold">
             {(() => {
-              const delays = data
+              const delays = conversationData
                 .filter(entry => entry.speaker === "Bot" && entry.response_delay !== "null")
                 .map(entry => {
                   const match = entry.response_delay.match(/(\d+)/);
@@ -59,7 +60,7 @@ export function Dashboard({ data }: DashboardProps) {
             })()}
           </p>
           <div className="text-xs text-muted-foreground">
-            Based on {data.filter(entry => entry.speaker === "Bot" && entry.response_delay !== "null").length} responses
+            Based on {conversationData.filter(entry => entry.speaker === "Bot" && entry.response_delay !== "null").length} responses
           </div>
         </div>
         
@@ -70,7 +71,7 @@ export function Dashboard({ data }: DashboardProps) {
           </div>
           <p className="text-2xl font-semibold">
             {(() => {
-              const customerSentiments = data
+              const customerSentiments = conversationData
                 .filter(entry => entry.speaker === "Customer")
                 .map(entry => entry.sentiment_words_analysis);
               
@@ -84,7 +85,7 @@ export function Dashboard({ data }: DashboardProps) {
             })()}
           </p>
           <div className="text-xs text-muted-foreground">
-            Based on {data.filter(entry => entry.speaker === "Customer").length} customer messages
+            Based on {conversationData.filter(entry => entry.speaker === "Customer").length} customer messages
           </div>
         </div>
         
@@ -95,11 +96,11 @@ export function Dashboard({ data }: DashboardProps) {
           </div>
           <p className="text-2xl font-semibold">
             {(() => {
-              const botEntriesWithAccuracy = data.filter(
-                entry => entry.speaker === "Bot" && entry.accuracy_scale !== null
+              const botEntriesWithAccuracy = conversationData.filter(
+                entry => entry.speaker === "Bot" && entry.accuracy !== null
               );
               
-              const accuracyValues = botEntriesWithAccuracy.map(entry => entry.accuracy_scale as number);
+              const accuracyValues = botEntriesWithAccuracy.map(entry => entry.accuracy as number);
               const avgAccuracy = accuracyValues.length > 0
                 ? accuracyValues.reduce((sum, val) => sum + val, 0) / accuracyValues.length
                 : 0;
@@ -109,7 +110,7 @@ export function Dashboard({ data }: DashboardProps) {
             })()}
           </p>
           <div className="text-xs text-muted-foreground">
-            Based on {data.filter(entry => entry.speaker === "Bot" && entry.accuracy_scale !== null).length} evaluated responses
+            Based on {conversationData.filter(entry => entry.speaker === "Bot" && entry.accuracy !== null).length} evaluated responses
           </div>
         </div>
       </div>
@@ -118,21 +119,21 @@ export function Dashboard({ data }: DashboardProps) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {/* First Column */}
         <div className="space-y-6">
-          <AccuracyCard data={data} />
-          <SentimentAnalysis data={data} />
+          <AccuracyCard data={conversationData} />
+          <SentimentAnalysis data={conversationData} />
         </div>
         
         {/* Second Column */}
         <div className="lg:col-span-2 space-y-6">
-          <AccuracyGraph data={data} />
-          <DelayGraph data={data} />
+          <AccuracyGraph data={conversationData} />
+          <DelayGraph data={conversationData} />
         </div>
       </div>
       
       {/* Insights and Timeline */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ConversationInsights data={data} />
-        <ConversationTimeline data={data} />
+        <ConversationInsights data={conversationData} />
+        <ConversationTimeline data={conversationData} />
       </div>
     </div>
   );

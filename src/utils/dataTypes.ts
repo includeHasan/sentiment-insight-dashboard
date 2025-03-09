@@ -1,13 +1,19 @@
-
 export interface ConversationEntry {
-  speaker: "Bot" | "Customer";
+  speaker: string;
   text: string;
   start_time: string;
   end_time: string;
-  sentiment_words_analysis: "positive" | "neutral" | "negative";
-  sentiment_tone: "positive" | "neutral" | "negative";
-  response_delay: string | "null";
-  accuracy_scale: number | null;
+  sentiment_words_analysis?: string;
+  sentiment_tone?: string;
+  sentiment?: number;
+  response_delay: string;
+  accuracy: number | null;
+  is_abusive?: boolean;
+  abusive_words?: string[];
+}
+
+export interface ConversationData {
+  conversation: ConversationEntry[];
 }
 
 export interface AccuracyMetric {
@@ -46,7 +52,8 @@ export type InsightType =
   | "interaction";
 
 export interface Insight {
-  type: InsightType;
+  type: 'general' | 'accuracy' | 'sentiment' | 'delays' | 'interaction';
   title: string;
   description: string;
+  priority?: 'high' | 'medium' | 'low';
 }

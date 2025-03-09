@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConversationEntry } from "@/utils/dataTypes";
@@ -88,9 +87,9 @@ export function ConversationTimeline({ data }: ConversationTimelineProps) {
                     {entry.sentiment_words_analysis}
                   </div>
                   
-                  {entry.accuracy_scale !== null && (
+                  {entry.accuracy !== null && (
                     <div className="pill bg-secondary">
-                      {getAccuracyIndicator(entry.accuracy_scale)}
+                      {getAccuracyIndicator(entry.accuracy)}
                     </div>
                   )}
                   

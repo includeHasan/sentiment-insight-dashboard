@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConversationEntry } from "@/utils/dataTypes";
@@ -11,7 +10,7 @@ interface AccuracyGraphProps {
 export function AccuracyGraph({ data }: AccuracyGraphProps) {
   // Extract bot entries with accuracy scores and transform for chart
   const chartData = data
-    .filter((entry) => entry.speaker === "Bot" && entry.accuracy_scale !== null)
+    .filter((entry) => entry.speaker === "Bot" && entry.accuracy !== null)
     .map((entry, index) => {
       // Parse time to get minutes and seconds
       const timeParts = entry.start_time.split(":");
@@ -19,7 +18,7 @@ export function AccuracyGraph({ data }: AccuracyGraphProps) {
       
       return {
         name: `Response ${index + 1}`,
-        accuracy: entry.accuracy_scale,
+        accuracy: entry.accuracy,
         time: timeFormatted,
       };
     });

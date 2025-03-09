@@ -86,8 +86,8 @@ export function Dashboard({ data, isStreaming = false, currentStreamingItem = nu
               
               const avgSentiment = customerSentiments.reduce((sum, val) => sum + val, 0) / customerSentiments.length;
               
-              if (avgSentiment > 0.3) return "Positive";
-              if (avgSentiment < -0.3) return "Negative";
+              if (avgSentiment > 0.1) return "Positive";
+              if (avgSentiment < -0.1) return "Negative";
               return "Neutral";
             })()}
           </p>

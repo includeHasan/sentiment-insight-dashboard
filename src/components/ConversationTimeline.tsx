@@ -27,8 +27,8 @@ export function ConversationTimeline({
   
   // Get sentiment indicator
   const getSentimentIndicator = (sentiment: number) => {
-    if (sentiment > 0.3) return "positive";
-    if (sentiment < -0.3) return "negative";
+    if (sentiment > 0.1) return "positive";
+    if (sentiment < -0.1) return "negative";
     return "neutral";
   };
   

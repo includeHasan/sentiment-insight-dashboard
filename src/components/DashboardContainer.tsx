@@ -5,7 +5,7 @@ import { Loader2, AlertCircle, Clock, BarChart } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export function DashboardContainer() {
-  const { data, isLoading, error, alertMessages } = useConversationData();
+  const { data, isLoading, error, alertMessages = [] } = useConversationData();
 
   // Show loading state
   if (isLoading) {
@@ -26,7 +26,7 @@ export function DashboardContainer() {
         <p className="text-muted-foreground text-center max-w-md">
           {error.message}
         </p>
-        <button 
+        <button
           className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-md"
           onClick={() => window.location.reload()}
         >
@@ -37,26 +37,7 @@ export function DashboardContainer() {
   }
 
   // Validate data structure
-  if (!data) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center">
-        <AlertCircle className="h-8 w-8 text-destructive mb-4" />
-        <p className="text-lg font-medium mb-2">Data structure error</p>
-        <p className="text-muted-foreground text-center max-w-md">
-          The data received from the server has an unexpected format.
-        </p>
-        <button 
-          className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-md"
-          onClick={() => window.location.reload()}
-        >
-          Retry
-        </button>
-      </div>
-    );
-  }
-
-  // Check if data has conversation property
-  if (!data.conversation || !Array.isArray(data.conversation)) {
+  if (!data?.conversation || !Array.isArray(data.conversation)) {
     console.error("Invalid data structure:", data);
     return (
       <div className="min-h-screen flex flex-col items-center justify-center">
@@ -65,7 +46,7 @@ export function DashboardContainer() {
         <p className="text-muted-foreground text-center max-w-md">
           The data from the server is missing the conversation property or it's not an array.
         </p>
-        <button 
+        <button
           className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-md"
           onClick={() => window.location.reload()}
         >
@@ -76,9 +57,9 @@ export function DashboardContainer() {
   }
 
   // Group alerts by type
-  const abusiveAlerts = alertMessages.filter(msg => msg.type === 'abusive');
-  const delayAlerts = alertMessages.filter(msg => msg.type === 'delay');
-  const accuracyAlerts = alertMessages.filter(msg => msg.type === 'accuracy');
+  const abusiveAlerts = alertMessages?.filter((msg) => msg.type === "abusive") || [];
+  const delayAlerts = alertMessages?.filter((msg) => msg.type === "delay") || [];
+  const accuracyAlerts = alertMessages?.filter((msg) => msg.type === "accuracy") || [];
 
   // Show alerts inline
   const alertsSection = alertMessages.length > 0 ? (
@@ -90,46 +71,42 @@ export function DashboardContainer() {
             <Alert key={`abusive-${index}`} variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Abusive content from {message.speaker}</AlertTitle>
-              <AlertDescription>
-                {message.text}
+              <AlertDescription>{message.text}</AlertDescription>
+            </Alert>
+          ))}
+        </div>
+      )}
+
+      {delayAlerts.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium text-amber-600">Slow Response Times Detected</h3>
+          {delayAlerts.map((message, index) => (
+            <Alert key={`delay-${index}`} variant="default" className="border-amber-500 bg-amber-50 dark:bg-amber-950/30">
+              <Clock className="h-4 w-4 text-amber-600" />
+              <AlertTitle className="text-amber-700">Response delay: {message.value}s</AlertTitle>
+              <AlertDescription className="text-amber-600">
+                {message.text.substring(0, 100)}
+                {message.text.length > 100 ? "..." : ""}
               </AlertDescription>
             </Alert>
           ))}
         </div>
       )}
-      
-      {delayAlerts.length > 0 && (
-        <div className="space-y-2">
-          <h3 className="text-sm font-medium text-amber-600">Slow Response Times Detected</h3>
-          {delayAlerts.map((message, index) => (
-            <React.Fragment key={`delay-${index}`}>
-              <Alert variant="default" className="border-amber-500 bg-amber-50 dark:bg-amber-950/30">
-                <Clock className="h-4 w-4 text-amber-600" />
-                <AlertTitle className="text-amber-700">Response delay: {message.value}s</AlertTitle>
-                <AlertDescription className="text-amber-600">
-                  {message.text.substring(0, 100)}{message.text.length > 100 ? '...' : ''}
-                </AlertDescription>
-              </Alert>
-            </React.Fragment>
-          ))}
-        </div>
-      )}
-      
+
       {accuracyAlerts.length > 0 && (
         <div className="space-y-2">
           <h3 className="text-sm font-medium text-rose-600">Poor Accuracy Detected</h3>
           {accuracyAlerts.map((message, index) => (
-            <React.Fragment key={`accuracy-${index}`}>
-              <Alert variant="default" className="border-rose-500 bg-rose-50 dark:bg-rose-950/30">
-                <BarChart className="h-4 w-4 text-rose-600" />
-                <AlertTitle className="text-rose-700">
-                  Accuracy score: {Math.round(((message.value as number) + 1) / 2 * 100)}%
-                </AlertTitle>
-                <AlertDescription className="text-rose-600">
-                  {message.text.substring(0, 100)}{message.text.length > 100 ? '...' : ''}
-                </AlertDescription>
-              </Alert>
-            </React.Fragment>
+            <Alert key={`accuracy-${index}`} variant="default" className="border-rose-500 bg-rose-50 dark:bg-rose-950/30">
+              <BarChart className="h-4 w-4 text-rose-600" />
+              <AlertTitle className="text-rose-700">
+                Accuracy score: {Math.round(((Number(message.value) + 1) / 2) * 100)}%
+              </AlertTitle>
+              <AlertDescription className="text-rose-600">
+                {message.text.substring(0, 100)}
+                {message.text.length > 100 ? "..." : ""}
+              </AlertDescription>
+            </Alert>
           ))}
         </div>
       )}

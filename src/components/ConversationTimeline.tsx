@@ -53,7 +53,7 @@ export function ConversationTimeline({ data }: ConversationTimelineProps) {
             <div 
               key={index} 
               className="relative flex items-start gap-4 animate-fade-in"
-              style={{ animationDelay: `${index * 100}ms` }}
+              style={{ animationDelay: `${100}ms` }}
             >
               {/* Timeline Node */}
               <div className="absolute left-6 transform -translate-x-1/2 mt-1.5">
@@ -105,6 +105,29 @@ export function ConversationTimeline({ data }: ConversationTimelineProps) {
               </div>
             </div>
           ))}
+
+          {/* Add typing indicator for the most recent message */}
+          <div className="relative flex items-start gap-4">
+            <div className="absolute left-6 transform -translate-x-1/2 mt-1.5">
+              <div className="rounded-full p-1.5 bg-gray-100 text-gray-600">
+                <div className="h-3 w-3"></div>
+              </div>
+            </div>
+            
+            <div className="min-w-16 text-xs text-muted-foreground flex items-center pt-1.5">
+              <Clock className="h-3 w-3 mr-1" />
+              <span>now</span>
+            </div>
+            
+            <div className="flex-1 bg-secondary/30 rounded-lg p-3 shadow-sm">
+              <div className="flex items-center space-x-2">
+                <div className="h-2 w-2 bg-primary rounded-full animate-bounce"></div>
+                <div className="h-2 w-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
+                <div className="h-2 w-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
+                <span className="text-sm text-muted-foreground ml-2">Analyzing conversation...</span>
+              </div>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>
